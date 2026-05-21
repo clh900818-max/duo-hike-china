@@ -74,7 +74,7 @@
           <section class="status-block">
             <div>
               <span class="label">今日</span>
-              <strong id="todayLessons">0 小关</strong>
+              <strong id="todayLessons">0 分</strong>
             </div>
             <div>
               <span class="label">连续</span>
@@ -93,17 +93,23 @@
             </div>
           </section>
 
-          <section class="speed-block">
-            <span class="label">步速</span>
-            <div class="segmented" role="radiogroup" aria-label="步速模式">
-              <button type="button" data-speed="10" role="radio">轻松</button>
-              <button type="button" data-speed="5" role="radio">标准</button>
-              <button type="button" data-speed="2" role="radio">硬核</button>
+          <section class="score-block">
+            <div class="score-heading">
+              <div>
+                <span class="label">Duolingo</span>
+                <strong id="scoreSummary">31 / 130 分</strong>
+              </div>
+              <span id="scoreRate">1 分≈36 km</span>
             </div>
+            <label class="score-field">
+              <span>英语分数</span>
+              <input id="scoreInput" type="number" min="31" max="130" step="1" value="31" inputmode="numeric">
+            </label>
+            <button id="updateScoreBtn" type="button">同步分数</button>
           </section>
 
           <section class="actions">
-            <button id="completeBtn" class="primary-action" type="button">完成一小关</button>
+            <button id="completeBtn" class="primary-action" type="button">分数 +1</button>
             <div class="secondary-actions">
               <button id="undoBtn" type="button">撤回</button>
               <button id="resetBtn" type="button">重置</button>
@@ -126,7 +132,7 @@
     <dialog id="resetDialog" class="confirm-dialog">
       <form method="dialog">
         <h2>重置旅程？</h2>
-        <p>进度、今日小关和连续天数会回到起点。</p>
+        <p>分数进度、今日提升和连续天数会回到 31 分起点。</p>
         <div class="dialog-actions">
           <button value="cancel" type="submit">取消</button>
           <button id="confirmReset" value="confirm" type="submit">重置</button>

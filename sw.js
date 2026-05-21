@@ -1,4 +1,4 @@
-const CACHE_NAME = "duo-hike-china-v3";
+const CACHE_NAME = "duo-hike-china-v4";
 const APP_ASSETS = [
   "./",
   "./index.html",

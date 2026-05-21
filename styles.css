@@ -266,7 +266,7 @@ h2 {
 
 .status-block div,
 .journey-block,
-.speed-block {
+.score-block {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.34);
@@ -309,27 +309,61 @@ h2 {
   transition: width 220ms ease;
 }
 
-.speed-block {
+.score-block {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+.score-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.segmented button {
-  min-width: 0;
-  padding: 0 8px;
+.score-heading strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.35rem;
+  line-height: 1.12;
+}
+
+#scoreRate {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--route-dark);
+  background: rgba(185, 77, 45, 0.1);
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
-.segmented button[aria-checked="true"] {
+.score-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.score-field input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: #fffaf3;
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 900;
+}
+
+#updateScoreBtn {
   border-color: var(--forest);
   color: #f9f3e9;
   background: var(--forest);
+  font-weight: 900;
 }
 
 .actions {
@@ -614,7 +648,7 @@ h2 {
 
   .status-block,
   .journey-block,
-  .speed-block {
+  .score-block {
     box-shadow: none;
   }
 

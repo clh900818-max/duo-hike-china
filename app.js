@@ -395,7 +395,7 @@ const places = [
 
 const defaultState = {
   distance: 0,
-  speed: 5,
+  duolingoScore: 31,
   todayLessons: 0,
   streakDays: 0,
   lastActiveDate: "",
@@ -404,6 +404,9 @@ const defaultState = {
 
 const lastItem = (items) => items[items.length - 1];
 const totalRouteKm = lastItem(places).km;
+const BASELINE_SCORE = 31;
+const TARGET_SCORE = 130;
+const KM_PER_SCORE = totalRouteKm / (TARGET_SCORE - BASELINE_SCORE);
 const todayKey = () => new Date().toLocaleDateString("sv-SE");
 const yesterdayKey = () => {
   const date = new Date();
@@ -432,6 +435,10 @@ const progressBar = document.querySelector("#progressBar");
 const placesList = document.querySelector("#placesList");
 const unlockedCount = document.querySelector("#unlockedCount");
 const completeBtn = document.querySelector("#completeBtn");
+const scoreSummary = document.querySelector("#scoreSummary");
+const scoreRate = document.querySelector("#scoreRate");
+const scoreInput = document.querySelector("#scoreInput");
+const updateScoreBtn = document.querySelector("#updateScoreBtn");
 const undoBtn = document.querySelector("#undoBtn");
 const resetBtn = document.querySelector("#resetBtn");
 const resetDialog = document.querySelector("#resetDialog");
@@ -444,7 +451,10 @@ const toast = document.querySelector("#toast");
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return { ...defaultState, ...saved, history: Array.isArray(saved && saved.history) ? saved.history : [] };
+    const merged = { ...defaultState, ...saved, history: Array.isArray(saved && saved.history) ? saved.history : [] };
+    merged.duolingoScore = clampScore(Number(merged.duolingoScore || BASELINE_SCORE));
+    merged.distance = scoreToDistance(merged.duolingoScore);
+    return merged;
   } catch {
     return { ...defaultState };
   }
@@ -456,6 +466,15 @@ function saveState() {
 
 function clampDistance(distance) {
   return Math.max(0, Math.min(totalRouteKm, Math.round(distance)));
+}
+
+function clampScore(score) {
+  if (!Number.isFinite(score)) return BASELINE_SCORE;
+  return Math.max(BASELINE_SCORE, Math.min(TARGET_SCORE, Math.round(score)));
+}
+
+function scoreToDistance(score) {
+  return clampDistance((clampScore(score) - BASELINE_SCORE) * KM_PER_SCORE);
 }
 
 function getSegment(distance) {
@@ -551,13 +570,6 @@ function renderPlaces() {
     .join("");
 }
 
-function renderSpeed() {
-  document.querySelectorAll("[data-speed]").forEach((button) => {
-    const selected = Number(button.dataset.speed) === Number(state.speed);
-    button.setAttribute("aria-checked", String(selected));
-  });
-}
-
 function renderPlaceDialog(place) {
   const keywords = place.keywords.map((keyword) => `<span>${keyword}</span>`).join("");
   placeDialogBody.innerHTML = `
@@ -595,7 +607,9 @@ function openPlace(place) {
 
 function render() {
   syncDateState();
-  const distance = clampDistance(state.distance);
+  state.duolingoScore = clampScore(state.duolingoScore);
+  state.distance = scoreToDistance(state.duolingoScore);
+  const distance = state.distance;
   const percent = Math.round((distance / totalRouteKm) * 100);
   const segment = getSegment(distance);
   const position = getPosition(distance);
@@ -613,17 +627,19 @@ function render() {
   progressPercent.textContent = `${percent}%`;
   currentPlace.textContent = latest.name;
   nextPlace.textContent = distance >= totalRouteKm ? "完成" : segment.to.name;
-  todayLessons.textContent = `${state.todayLessons} 小关`;
+  todayLessons.textContent = `${state.todayLessons} 分`;
   streakDays.textContent = `${state.streakDays} 天`;
   distanceToNext.textContent = distance >= totalRouteKm ? "0 km" : `${segment.to.km - distance} km`;
   progressBar.style.width = `${percent}%`;
   unlockedCount.textContent = `${unlocked.length} / ${places.length}`;
   routeNote.textContent = latest.oneLine;
+  scoreSummary.textContent = `${state.duolingoScore} / ${TARGET_SCORE} 分`;
+  scoreRate.textContent = `1 分≈${Math.round(KM_PER_SCORE)} km`;
+  scoreInput.value = String(state.duolingoScore);
   undoBtn.disabled = state.history.length === 0;
 
   renderNodes();
   renderPlaces();
-  renderSpeed();
   saveState();
 }
 
@@ -636,15 +652,19 @@ function showToast(message) {
   }, 2200);
 }
 
-function completeLesson() {
-  if (state.distance >= totalRouteKm) {
-    showToast("已经抵达拉萨。");
-    return;
-  }
+function pushHistory() {
+  state.history.push({
+    distance: state.distance,
+    duolingoScore: state.duolingoScore,
+    todayLessons: state.todayLessons,
+    streakDays: state.streakDays,
+    lastActiveDate: state.lastActiveDate
+  });
+  state.history = state.history.slice(-80);
+}
 
+function markActivity(scoreDelta) {
   const today = todayKey();
-  const beforeDistance = state.distance;
-  const beforeUnlocked = getUnlockedPlaces().length;
   const firstLessonToday = state.lastActiveDate !== today;
 
   if (firstLessonToday) {
@@ -653,27 +673,49 @@ function completeLesson() {
     state.lastActiveDate = today;
   }
 
-  state.history.push({
-    distance: state.distance,
-    todayLessons: state.todayLessons,
-    streakDays: state.streakDays,
-    lastActiveDate: state.lastActiveDate
-  });
-  state.history = state.history.slice(-80);
-  state.todayLessons += 1;
-  state.distance = clampDistance(state.distance + Number(state.speed));
+  if (scoreDelta > 0) {
+    state.todayLessons += scoreDelta;
+  }
+}
 
+function applyScore(nextScore) {
+  const beforeDistance = state.distance;
+  const beforeUnlocked = getUnlockedPlaces(beforeDistance).length;
+  const previousScore = state.duolingoScore;
+  const score = clampScore(nextScore);
+
+  if (score === previousScore) {
+    showToast("分数没有变化。");
+    render();
+    return;
+  }
+
+  pushHistory();
+  state.duolingoScore = score;
+  state.distance = scoreToDistance(score);
+  markActivity(Math.max(0, score - previousScore));
   render();
 
   const afterUnlocked = getUnlockedPlaces();
+  const distanceDelta = state.distance - beforeDistance;
   if (afterUnlocked.length > beforeUnlocked) {
     const newPlace = lastItem(afterUnlocked);
     lastUnlockedPlaceId = newPlace.id;
     showToast(`解锁 ${newPlace.name}`);
     window.setTimeout(() => openPlace(newPlace), 260);
+  } else if (distanceDelta > 0) {
+    showToast(`分数 +${score - previousScore}，前进 ${distanceDelta} km`);
   } else {
-    showToast(`前进 ${state.distance - beforeDistance} km`);
+    showToast(`已校正到 ${score} 分`);
   }
+}
+
+function completeLesson() {
+  if (state.duolingoScore >= TARGET_SCORE) {
+    showToast("已经抵达拉萨。");
+    return;
+  }
+  applyScore(state.duolingoScore + 1);
 }
 
 function undo() {
@@ -681,17 +723,23 @@ function undo() {
   if (!previous) return;
   state = { ...state, ...previous, history: state.history };
   render();
-  showToast("已撤回上一小关。");
+  showToast("已撤回上一次分数变动。");
 }
 
 function reset() {
-  state = { ...defaultState, speed: state.speed, history: [] };
+  state = { ...defaultState, history: [] };
   lastUnlockedPlaceId = null;
   render();
-  showToast("旅程已回到北京。");
+  showToast("已回到 31 分起点。");
 }
 
 completeBtn.addEventListener("click", completeLesson);
+updateScoreBtn.addEventListener("click", () => applyScore(Number(scoreInput.value)));
+scoreInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    applyScore(Number(scoreInput.value));
+  }
+});
 undoBtn.addEventListener("click", undo);
 resetBtn.addEventListener("click", () => {
   if (typeof resetDialog.showModal === "function") {
@@ -708,14 +756,6 @@ placesList.addEventListener("click", (event) => {
   if (!card || card.disabled) return;
   const place = places.find((item) => item.id === card.dataset.placeId);
   if (place) openPlace(place);
-});
-
-document.querySelectorAll("[data-speed]").forEach((button) => {
-  button.addEventListener("click", () => {
-    state.speed = Number(button.dataset.speed);
-    render();
-    showToast(`每小关前进 ${state.speed} km`);
-  });
 });
 
 if ("serviceWorker" in navigator) {
