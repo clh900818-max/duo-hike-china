@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f4f0e8">
+    <meta name="description" content="Duolingo 中国徒步地图打卡器">
+    <title>Duo Hike China</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./assets/icon.svg">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">北京 → 拉萨</p>
+          <h1>Duo Hike China</h1>
+        </div>
+        <div class="topbar__meta" aria-label="总进度">
+          <span id="totalDistance">0 km</span>
+          <span id="progressPercent">0%</span>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="map-panel" aria-label="中国徒步路线地图">
+          <div class="map-toolbar">
+            <div>
+              <span class="label">当前位置</span>
+              <strong id="currentPlace">北京</strong>
+            </div>
+            <div>
+              <span class="label">下一站</span>
+              <strong id="nextPlace">保定</strong>
+            </div>
+          </div>
+
+          <div class="map-frame">
+            <svg id="routeMap" class="route-map" viewBox="0 0 960 640" role="img" aria-labelledby="mapTitle mapDesc">
+              <title id="mapTitle">北京到拉萨徒步路线</title>
+              <desc id="mapDesc">路线从北京出发，经过华北、关中、蜀地和川藏线，最终抵达拉萨。</desc>
+              <defs>
+                <linearGradient id="terrain" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#f8f4eb"></stop>
+                  <stop offset="0.52" stop-color="#ece4d5"></stop>
+                  <stop offset="1" stop-color="#d8ded0"></stop>
+                </linearGradient>
+                <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#52604e" flood-opacity="0.16"></feDropShadow>
+                </filter>
+              </defs>
+
+              <rect width="960" height="640" rx="18" fill="url(#terrain)"></rect>
+              <path class="landmass" d="M748 81c70 44 103 112 96 181-6 61-53 98-64 153-13 66 30 106-6 153-35 45-116 36-184 26-87-13-127 33-221 18-109-17-207-96-239-197-30-94 2-213 82-281 75-65 185-65 254-51 94 20 158-48 282-2Z"></path>
+              <path class="ridge" d="M198 329c95-13 151 38 224 27 57-8 80-48 138-50 58-1 101 38 160 24"></path>
+              <path class="ridge ridge--thin" d="M398 488c39-52 92-69 136-98 64-43 100-103 191-123"></path>
+              <path class="river" d="M277 255c58 29 77 81 142 90 71 10 110-38 178-13 42 15 67 50 91 86"></path>
+              <path class="river river--thin" d="M476 158c-41 51-25 102-58 143-22 27-55 38-89 49"></path>
+
+              <path id="routeBack" class="route route--back" d=""></path>
+              <path id="routeDone" class="route route--done" d=""></path>
+              <g id="nodeLayer"></g>
+              <g id="walkerLayer">
+                <circle id="walkerHalo" class="walker-halo" cx="0" cy="0" r="24"></circle>
+                <circle id="walker" class="walker" cx="0" cy="0" r="10"></circle>
+              </g>
+            </svg>
+          </div>
+        </section>
+
+        <aside class="control-panel" aria-label="学习打卡面板">
+          <section class="status-block">
+            <div>
+              <span class="label">今日</span>
+              <strong id="todayLessons">0 小关</strong>
+            </div>
+            <div>
+              <span class="label">连续</span>
+              <strong id="streakDays">0 天</strong>
+            </div>
+          </section>
+
+          <section class="journey-block">
+            <div class="journey-copy">
+              <span class="label">距离下一站</span>
+              <strong id="distanceToNext">0 km</strong>
+              <p id="routeNote">从北京出发。</p>
+            </div>
+            <div class="progress-track" aria-label="路线总进度">
+              <span id="progressBar"></span>
+            </div>
+          </section>
+
+          <section class="speed-block">
+            <span class="label">步速</span>
+            <div class="segmented" role="radiogroup" aria-label="步速模式">
+              <button type="button" data-speed="10" role="radio">轻松</button>
+              <button type="button" data-speed="5" role="radio">标准</button>
+              <button type="button" data-speed="2" role="radio">硬核</button>
+            </div>
+          </section>
+
+          <section class="actions">
+            <button id="completeBtn" class="primary-action" type="button">完成一小关</button>
+            <div class="secondary-actions">
+              <button id="undoBtn" type="button">撤回</button>
+              <button id="resetBtn" type="button">重置</button>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <section class="places-section" aria-label="路线节点">
+        <div class="section-heading">
+          <h2>路线节点</h2>
+          <span id="unlockedCount">1 / 18</span>
+        </div>
+        <div id="placesList" class="places-list"></div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <dialog id="resetDialog" class="confirm-dialog">
+      <form method="dialog">
+        <h2>重置旅程？</h2>
+        <p>进度、今日小关和连续天数会回到起点。</p>
+        <div class="dialog-actions">
+          <button value="cancel" type="submit">取消</button>
+          <button id="confirmReset" value="confirm" type="submit">重置</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
