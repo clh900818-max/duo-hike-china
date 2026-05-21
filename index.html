@@ -40,7 +40,7 @@
           <div class="map-frame">
             <svg id="routeMap" class="route-map" viewBox="0 0 960 640" role="img" aria-labelledby="mapTitle mapDesc">
               <title id="mapTitle">北京到拉萨徒步路线</title>
-              <desc id="mapDesc">路线从北京出发，经过华北、关中、蜀地和川藏线，最终抵达拉萨。</desc>
+              <desc id="mapDesc">文化川藏线从北京出发，经过晋商山西、关中西安、秦岭蜀道、成都平原、康巴藏区和藏东南，最终抵达拉萨。</desc>
               <defs>
                 <linearGradient id="terrain" x1="0" x2="1" y1="0" y2="1">
                   <stop offset="0" stop-color="#f8f4eb"></stop>
@@ -114,8 +114,8 @@
 
       <section class="places-section" aria-label="路线节点">
         <div class="section-heading">
-          <h2>路线节点</h2>
-          <span id="unlockedCount">1 / 18</span>
+          <h2>旅行图鉴</h2>
+          <span id="unlockedCount">1 / 30</span>
         </div>
         <div id="placesList" class="places-list"></div>
       </section>
@@ -131,6 +131,13 @@
           <button value="cancel" type="submit">取消</button>
           <button id="confirmReset" value="confirm" type="submit">重置</button>
         </div>
+      </form>
+    </dialog>
+
+    <dialog id="placeDialog" class="place-dialog">
+      <form method="dialog">
+        <button id="closePlaceDialog" class="dialog-close" type="button" aria-label="关闭">×</button>
+        <div id="placeDialogBody"></div>
       </form>
     </dialog>
 
